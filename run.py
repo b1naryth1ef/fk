@@ -11,13 +11,14 @@ thread.start_new_thread(s.parse_loop, ())
 
 term = Terminal("term", "ipc:///tmp/fk/1")
 term.connect()
-term.attach_interface(GUI)
-term.interfaces[0].cache_line_height()
+
+g = GUI()
+term.attach_interface(g)
+
 term.show()
 
-reg = TextRegion(term.interfaces[0])
-reg.LINES = ["yolo swag nikka"]
-reg.draw()
+text = TextRegion(["YOLO SWAG MUDAFUKA"])
+g.add_region(text)
 
 while True:
     time.sleep(1)

@@ -33,8 +33,7 @@ class Terminal(TerminalAPI):
             thread.start_new_thread(i.loop, ())
 
     def attach_interface(self, i):
-        i = i(self)
-        i.setup()
+        i.setup(self)
         self.interfaces.append(i)
 
     def call_interface_method(self, method, args=[], kwargs={}):

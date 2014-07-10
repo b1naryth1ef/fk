@@ -10,25 +10,39 @@ class GUI(DrawInterface):
     log = logging.getLogger(__name__)
 
     SIZE = (500, 500)
+
+    # Font information
     FONT_LINE_HEIGHT = (0, 0)
     FONT_SIZE = 15
     FONT = None
 
-    DEFAULT_COLOR = SDL_Color(0, 255, 0, 255)
+    DEFAULT_COLOR = SDL_Color(0, 0, 0, 255)
 
-    def char_draw(self, x, y, char, style={}):
+    CHANGED = True
+
+    def flip(self):
+        self.CHANGED = False
+        SDL_RenderPresent(self.renderer)
+
+    def text_draw(self, x, y, text, style={}):
         color = self.DEFAULT_COLOR
         if 'color' in style:
             color = SDL_Color(*style['color'])
 
-        surf = TTF_RenderText_Solid(self.FONT, char, color)
+        surf = TTF_RenderText_Solid(self.FONT, text, color)
         rect = SDL_Rect()
         SDL_GetClipRect(surf, rect)
-        text = SDL_CreateTextureFromSurface(self.renderer, surf)
+        textu = SDL_CreateTextureFromSurface(self.renderer, surf)
 
-        SDL_RenderCopy(self.renderer, text, None, rect)
-        # SDL_RenderClear(self.renderer)
-        SDL_RenderPresent(self.renderer)
+        SDL_RenderCopy(self.renderer, textu, None, rect)
+        self.CHANGED = True
+
+        # WTF?
+        self.flip()
+
+    def clear(self):
+        self.CHANGED = True
+        SDL_RenderClear(self.renderer)
 
     def select_font(self, font_name):
         """
@@ -54,7 +68,9 @@ class GUI(DrawInterface):
             if _y > y: y = _y
         self.FONT_LINE_HEIGHT = (x.value, y.value)
 
-    def setup(self):
+    def setup(self, parent):
+        self.parent = parent
+
         SDL_Init(SDL_INIT_EVERYTHING)
         TTF_Init()
         self.window = SDL_CreateWindow(self.parent.name,
@@ -64,8 +80,8 @@ class GUI(DrawInterface):
         self.renderer = SDL_CreateRenderer(self.window, 0, SDL_RENDERER_ACCELERATED)
 
         SDL_SetRenderDrawColor(self.renderer, 255, 0, 0, 255)
-        SDL_RenderClear(self.renderer)
-        SDL_RenderPresent(self.renderer)
+        self.clear()
+        self.flip()
 
         self.select_font("ubuntu.ttf")
 
@@ -85,6 +101,10 @@ class GUI(DrawInterface):
                         self.parent.handle_key_down(chr(event.key.keysym.sym))
                     else:
                         self.log.debug("Unhandled keyup: %s", event.key.keysym.sym)
+
+            if self.CHANGED:
+                self.flip()
+
             time.sleep(self.FPS_TIME)
 
     def shutdown(self):
