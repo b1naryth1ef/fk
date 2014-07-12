@@ -1,24 +1,46 @@
 from .interface import DrawInterface
+from .fonts import FontDB
 
-import ctypes, time, logging, string
+import ctypes, time, logging
 from sdl2 import *
 from sdl2.sdlttf import *
 
 class GUI(DrawInterface):
-    FPS_TIME = 1.0 / 60
-
-    log = logging.getLogger(__name__)
-
     SIZE = (500, 500)
-
-    # Font information
-    FONT_LINE_HEIGHT = (0, 0)
-    FONT_SIZE = 15
-    FONT = None
 
     DEFAULT_COLOR = SDL_Color(0, 0, 0, 255)
 
     CHANGED = True
+
+    def __init__(self):
+        DrawInterface.__init__(self)
+        self.log = logging.getLogger(__name__)
+
+        SDL_Init(SDL_INIT_EVERYTHING)
+        TTF_Init()
+
+        self.size = (500, 500)
+
+        # FPS
+        self.fps = 60
+        self.fps_time = 1.0 / self.fps
+
+        # Fonts
+        self.fontdb = FontDB()
+        q = self.fontdb.search("ubuntu mono", "regular")  # TODO: config
+        if not len(q) == 1:
+            raise Exception("Could not find font: %s" % q)
+        self.font = q[0]
+        self.font_size = 20
+
+        self.font.open_size(self.font_size)
+
+    def get_max_chars(self):
+        font_bounds = self.font.get_bounds(self.font_size)
+        x = self.size[0] / font_bounds[0]
+        y = self.size[1] / font_bounds[1]
+
+        return x, y
 
     def flip(self):
         self.CHANGED = False
@@ -29,7 +51,8 @@ class GUI(DrawInterface):
         if 'color' in style:
             color = SDL_Color(*style['color'])
 
-        surf = TTF_RenderText_Solid(self.FONT, text, color)
+        font = self.font.get_size(self.font_size)
+        surf = TTF_RenderText_Solid(font, text, color)
         rect = SDL_Rect()
         SDL_GetClipRect(surf, rect)
         textu = SDL_CreateTextureFromSurface(self.renderer, surf)
@@ -44,35 +67,9 @@ class GUI(DrawInterface):
         self.CHANGED = True
         SDL_RenderClear(self.renderer)
 
-    def select_font(self, font_name):
-        """
-        Selects a new font based on a path for rendering. This must be called
-        for font-face and font-size changes.
-        """
-        if self.FONT:
-            TTF_CloseFont(self.FONT)
-        self.FONT = TTF_OpenFont(font_name, self.FONT_SIZE)
-        self.cache_line_height()
-
-    def cache_line_height(self):
-        """
-        Obtains the largest (width, height) combination that will ever be
-        rendered with the current font.
-        """
-        if not self.FONT:
-            raise Exception("No font selected to cache line height for!")
-        x, y, _x, _y = 0, 0, ctypes.c_int(0), ctypes.c_int(0)
-        for char in string.printable:
-            TTF_SizeUTF8(self.FONT, char, ctypes.pointer(_x), ctypes.pointer(_y))
-            if _x > x: x = _x
-            if _y > y: y = _y
-        self.FONT_LINE_HEIGHT = (x.value, y.value)
-
     def setup(self, parent):
         self.parent = parent
 
-        SDL_Init(SDL_INIT_EVERYTHING)
-        TTF_Init()
         self.window = SDL_CreateWindow(self.parent.name,
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
             self.SIZE[0], self.SIZE[1], SDL_WINDOW_SHOWN)
@@ -83,7 +80,7 @@ class GUI(DrawInterface):
         self.clear()
         self.flip()
 
-        self.select_font("ubuntu.ttf")
+        # self.select_font("ubuntu.ttf")
 
     def loop(self):
         event = SDL_Event()
@@ -105,10 +102,10 @@ class GUI(DrawInterface):
             if self.CHANGED:
                 self.flip()
 
-            time.sleep(self.FPS_TIME)
+            time.sleep(self.fps_time)
 
     def shutdown(self):
-        if self.FONT: TTF_CloseFont(self.FONT)
+        self.font.close()
         SDL_DestroyRenderer(self.renderer)
         SDL_DestroyWindow(self.window)
         SDL_Quit()
