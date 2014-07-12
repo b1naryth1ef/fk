@@ -7,14 +7,13 @@ class Region(object):
         """
 
 class TextRegion(Region):
-    LINES = []
-    DEFAULT_STYLE = {}
-
-    def __init__(self, text=[]):
-        self.LINES = text
+    def __init__(self, *lines):
+        self.lines = lines
 
     def draw(self):
         maxx, maxy = self.parent.get_max_chars()
-        for x, line in enumerate(self.LINES):
-            if x > maxx or len(line) > maxy: continue
-            self.parent.text_draw(x * maxx, 0, line)
+        for x, line in enumerate(self.lines):
+            self.parent.text_draw(0, x * maxy, line)
+
+    def add_text(self, line, text):
+        pass

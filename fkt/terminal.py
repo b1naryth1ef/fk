@@ -1,5 +1,6 @@
 from fkp.client import FKClient
 from fkp.api import APIMixin
+from fkt.drawing import TextRegion
 
 import thread, sys
 
@@ -13,7 +14,9 @@ class Terminal(TerminalAPI):
         self.name = name
         self.client = FKClient(server)
 
-        self.interfaces = []
+        self.interface = None
+        self.textr = TextRegion()
+        self.line = 0
 
     def connect(self):
         thread.start_new_thread(self.client.parse_loop, ())
@@ -27,21 +30,15 @@ class Terminal(TerminalAPI):
         })
 
     def show(self):
-        self.call_interface_method("flip")
-
-        for i in self.interfaces:
-            thread.start_new_thread(i.loop, ())
-
-    def attach_interface(self, i):
-        i.setup(self)
-        self.interfaces.append(i)
-
-    def call_interface_method(self, method, args=[], kwargs={}):
-        for i in self.interfaces:
-            getattr(i, method)(*args, **kwargs)
+        self.interface.setup(self)
+        self.interface.add_region(self.textr)
+        self.interface.flip()
+        thread.start_new_thread(self.interface.loop, ())
 
     def handle_key_down(self, key):
-        pass
+        if key == '\r':
+            self.line += 1
+        self.textr.add_text(self.line, key)
 
     def handle_key_up(self, key):
         pass

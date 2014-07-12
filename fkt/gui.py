@@ -47,6 +47,7 @@ class GUI(DrawInterface):
         SDL_RenderPresent(self.renderer)
 
     def text_draw(self, x, y, text, style={}):
+        print text, x, y
         color = self.DEFAULT_COLOR
         if 'color' in style:
             color = SDL_Color(*style['color'])
@@ -55,6 +56,8 @@ class GUI(DrawInterface):
         surf = TTF_RenderText_Solid(font, text, color)
         rect = SDL_Rect()
         SDL_GetClipRect(surf, rect)
+        rect.x = x
+        rect.y = y
         textu = SDL_CreateTextureFromSurface(self.renderer, surf)
 
         SDL_RenderCopy(self.renderer, textu, None, rect)
@@ -80,8 +83,6 @@ class GUI(DrawInterface):
         self.clear()
         self.flip()
 
-        # self.select_font("ubuntu.ttf")
-
     def loop(self):
         event = SDL_Event()
         while True:
@@ -98,6 +99,9 @@ class GUI(DrawInterface):
                         self.parent.handle_key_down(chr(event.key.keysym.sym))
                     else:
                         self.log.debug("Unhandled keyup: %s", event.key.keysym.sym)
+                elif event.type == SDL_WINDOWEVENT: pass
+                    # self.flip()
+                    # self.flip()
 
             if self.CHANGED:
                 self.flip()
